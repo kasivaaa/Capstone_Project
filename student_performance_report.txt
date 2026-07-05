@@ -1,0 +1,13 @@
+STUDENT PERFORMANCE REPORTS
+===================================
+
+Student Name : Nicole Kasiva
+Course       : Computer Science
+Average Mark : 82
+Remark       : Excellent
+-----------------------------------
+Student Name : John Mwangi
+Course       : Information Technology
+Average Mark : 68
+Remark       : Pass
+-----------------------------------
