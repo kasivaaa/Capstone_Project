@@ -4,6 +4,9 @@
 
 import sqlite3
 import hashlib
+import os
+import shutil
+from datetime import datetime
 
 # -------------------------------
 # DATABASE CONNECTION
@@ -18,6 +21,14 @@ cursor = conn.cursor()
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+def create_reports_folder():
+    if not os.path.exists("Reports"):
+        os.makedirs("Reports")
+
+
+def create_backups_folder():
+    if not os.path.exists("Backups"):
+        os.makedirs("Backups")
 
 # -------------------------------
 # TABLES
@@ -630,10 +641,14 @@ def view_attendance():
         for record in records:
             print(f"Student: {record[0]} | Course: {record[1]} | Date: {record[2]} | Status: {record[3]}")
     else:
-        print("No attendance records found.")     
+        print("No attendance records found.")   
 
 #-------------------------------
-# GENERATE PERFORMANCE REPORT
+#  REPORT FUNCTIONS
+#------------------------------- 
+
+#-------------------------------
+#  STUDENT PERFORMANCE REPORT
 #-------------------------------
 
 def generate_performance_report():
@@ -661,6 +676,470 @@ def generate_performance_report():
             print(f"  Course: {grade[1]} | Score: {grade[2]}")
     else:
         print("No grades found.")
+#------------------------------------
+#STUDENT REPORT FILE
+#------------------------------------
+
+def generate_student_report_file():
+    create_reports_folder()
+
+    try:
+        student_id = int(input("Enter Student ID: "))
+    except ValueError:
+        print("Invalid Student ID.")
+        return
+
+    cursor.execute("""
+        SELECT name, course, age, email
+        FROM Students
+        WHERE student_id = ?
+    """, (student_id,))
+
+    student = cursor.fetchone()
+
+    if not student:
+        print("Student not found.")
+        return
+
+    cursor.execute("""
+        SELECT Courses.course_name, Grades.score
+        FROM Grades
+        JOIN Courses ON Grades.course_id = Courses.course_id
+        WHERE Grades.student_id = ?
+    """, (student_id,))
+
+    grades = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT attendance_date, status
+        FROM Attendance
+        WHERE student_id = ?
+    """, (student_id,))
+
+    attendance = cursor.fetchall()
+
+    if grades:
+        total = sum(score for _, score in grades)
+        average = total / len(grades)
+
+        if average >= 80:
+            grade_letter = "A"
+            remark = "Excellent"
+        elif average >= 70:
+            grade_letter = "B"
+            remark = "Very Good"
+        elif average >= 60:
+            grade_letter = "C"
+            remark = "Good"
+        elif average >= 50:
+            grade_letter = "D"
+            remark = "Pass"
+        else:
+            grade_letter = "F"
+            remark = "Needs Improvement"
+    else:
+        average = 0
+        grade_letter = "N/A"
+        remark = "No grades recorded"
+
+    if attendance:
+        present_count = sum(1 for record in attendance if record[1] == "Present")
+        attendance_rate = (present_count / len(attendance)) * 100
+    else:
+        present_count = 0
+        attendance_rate = 0
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    clean_name = student[0].replace(" ", "_")
+    filename = f"Reports/{clean_name}_Student_Report_{timestamp}.txt"
+
+    with open(filename, "w") as file:
+        file.write("STUDENT PERFORMANCE REPORT\n")
+        file.write("=" * 45 + "\n\n")
+
+        file.write("STUDENT DETAILS\n")
+        file.write("-" * 45 + "\n")
+        file.write(f"Name   : {student[0]}\n")
+        file.write(f"Course : {student[1]}\n")
+        file.write(f"Age    : {student[2]}\n")
+        file.write(f"Email  : {student[3]}\n\n")
+
+        file.write("GRADES\n")
+        file.write("-" * 45 + "\n")
+        if grades:
+            for course_name, score in grades:
+                file.write(f"{course_name}: {score}\n")
+        else:
+            file.write("No grades recorded.\n")
+
+        file.write("\nPERFORMANCE SUMMARY\n")
+        file.write("-" * 45 + "\n")
+        file.write(f"Average Score   : {average:.2f}\n")
+        file.write(f"Grade           : {grade_letter}\n")
+        file.write(f"Remark          : {remark}\n\n")
+
+        file.write("ATTENDANCE SUMMARY\n")
+        file.write("-" * 45 + "\n")
+        file.write(f"Present Days     : {present_count}\n")
+        file.write(f"Total Attendance : {len(attendance)}\n")
+        file.write(f"Attendance Rate  : {attendance_rate:.2f}%\n")
+
+    print(f"Student report saved as: {filename}")
+
+#-------------------------------
+# ATTENDANCE REPORT FILE
+#------------------------------
+
+def generate_attendance_report_file():
+    create_reports_folder()
+
+    try:
+        student_id = int(input("Enter Student ID: "))
+    except ValueError:
+        print("Invalid Student ID.")
+        return
+
+    cursor.execute("SELECT name FROM Students WHERE student_id = ?", (student_id,))
+    student = cursor.fetchone()
+
+    if not student:
+        print("Student not found.")
+        return
+
+    cursor.execute("""
+        SELECT Courses.course_name, Attendance.attendance_date, Attendance.status
+        FROM Attendance
+        JOIN Courses ON Attendance.course_id = Courses.course_id
+        WHERE Attendance.student_id = ?
+        ORDER BY Attendance.attendance_date
+    """, (student_id,))
+
+    records = cursor.fetchall()
+
+    if not records:
+        print("No attendance records found for this student.")
+        return
+
+    present_count = sum(1 for record in records if record[2] == "Present")
+    attendance_rate = (present_count / len(records)) * 100
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    clean_name = student[0].replace(" ", "_")
+    filename = f"Reports/{clean_name}_Attendance_Report_{timestamp}.txt"
+
+    with open(filename, "w") as file:
+        file.write("ATTENDANCE REPORT\n")
+        file.write("=" * 40 + "\n\n")
+        file.write(f"Student Name: {student[0]}\n\n")
+
+        file.write("ATTENDANCE RECORDS\n")
+        file.write("-" * 40 + "\n")
+
+        for course_name, date, status in records:
+            file.write(f"{date} | {course_name} | {status}\n")
+
+        file.write("\nSUMMARY\n")
+        file.write("-" * 40 + "\n")
+        file.write(f"Present Days    : {present_count}\n")
+        file.write(f"Total Records   : {len(records)}\n")
+        file.write(f"Attendance Rate : {attendance_rate:.2f}%\n")
+
+    print(f"Attendance report saved as: {filename}")
+
+#-------------------------------
+#  TEACHER REPORT FILE
+#-------------------------------    
+
+def generate_teacher_report_file():
+    create_reports_folder()
+
+    try:
+        teacher_id = int(input("Enter Teacher ID: "))
+    except ValueError:
+        print("Invalid Teacher ID.")
+        return
+
+    cursor.execute("""
+        SELECT name, subject, email
+        FROM Teachers
+        WHERE teacher_id = ?
+    """, (teacher_id,))
+
+    teacher = cursor.fetchone()
+
+    if not teacher:
+        print("Teacher not found.")
+        return
+
+    cursor.execute("""
+        SELECT course_name
+        FROM Courses
+        WHERE teacher_id = ?
+    """, (teacher_id,))
+
+    courses = cursor.fetchall()
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    clean_name = teacher[0].replace(" ", "_")
+    filename = f"Reports/{clean_name}_Teacher_Report_{timestamp}.txt"
+
+    with open(filename, "w") as file:
+        file.write("TEACHER REPORT\n")
+        file.write("=" * 40 + "\n\n")
+
+        file.write("TEACHER DETAILS\n")
+        file.write("-" * 40 + "\n")
+        file.write(f"Name    : {teacher[0]}\n")
+        file.write(f"Subject : {teacher[1]}\n")
+        file.write(f"Email   : {teacher[2]}\n\n")
+
+        file.write("ASSIGNED COURSES\n")
+        file.write("-" * 40 + "\n")
+
+        if courses:
+            for course in courses:
+                file.write(f"- {course[0]}\n")
+        else:
+            file.write("No courses assigned.\n")
+
+    print(f"Teacher report saved as: {filename}")
+
+#----------------------------------
+#COURSE REPORT FILE
+#-----------------------------------
+
+def generate_course_report_file():
+    create_reports_folder()
+
+    try:
+        course_id = int(input("Enter Course ID: "))
+    except ValueError:
+        print("Invalid Course ID.")
+        return
+
+    cursor.execute("""
+        SELECT Courses.course_name, Teachers.name
+        FROM Courses
+        LEFT JOIN Teachers ON Courses.teacher_id = Teachers.teacher_id
+        WHERE Courses.course_id = ?
+    """, (course_id,))
+
+    course = cursor.fetchone()
+
+    if not course:
+        print("Course not found.")
+        return
+
+    cursor.execute("""
+        SELECT name, email
+        FROM Students
+        WHERE course = ?
+    """, (course[0],))
+
+    students = cursor.fetchall()
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    clean_course = course[0].replace(" ", "_")
+    filename = f"Reports/{clean_course}_Course_Report_{timestamp}.txt"
+
+    with open(filename, "w") as file:
+        file.write("COURSE REPORT\n")
+        file.write("=" * 40 + "\n\n")
+
+        file.write("COURSE DETAILS\n")
+        file.write("-" * 40 + "\n")
+        file.write(f"Course Name : {course[0]}\n")
+        file.write(f"Teacher     : {course[1]}\n\n")
+
+        file.write("STUDENTS ENROLLED\n")
+        file.write("-" * 40 + "\n")
+
+        if students:
+            for student in students:
+                file.write(f"- {student[0]} | {student[1]}\n")
+        else:
+            file.write("No students enrolled in this course.\n")
+
+    print(f"Course report saved as: {filename}")
+
+#-------------------------------
+# BACKUP DATABASE
+#------------------------------
+
+def backup_database():
+    create_backups_folder()
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    backup_file = f"Backups/education_management_backup_{timestamp}.db"
+
+    conn.commit()
+
+    shutil.copy("education_management.db", backup_file)
+
+    print(f"Database backup created successfully: {backup_file}")
+
+#-------------------------------
+# STUDENT PERFORMANCE SUMMARY   
+#-------------------------------
+
+def student_performance_summary():
+    try:
+        student_id = int(input("Enter Student ID: "))
+    except ValueError:
+        print("Invalid Student ID.")
+        return
+
+    cursor.execute("SELECT name FROM Students WHERE student_id = ?", (student_id,))
+    student = cursor.fetchone()
+
+    if not student:
+        print("Student not found.")
+        return
+
+    cursor.execute("""
+        SELECT score FROM Grades
+        WHERE student_id = ?
+    """, (student_id,))
+
+    scores = cursor.fetchall()
+
+    if scores:
+        total = sum(score[0] for score in scores)
+        average = total / len(scores)
+
+        if average >= 80:
+            grade = "A"
+            remark = "Excellent"
+        elif average >= 70:
+            grade = "B"
+            remark = "Very Good"
+        elif average >= 60:
+            grade = "C"
+            remark = "Good"
+        elif average >= 50:
+            grade = "D"
+            remark = "Pass"
+        else:
+            grade = "F"
+            remark = "Needs Improvement"
+    else:
+        average = 0
+        grade = "N/A"
+        remark = "No grades recorded"
+
+    cursor.execute("""
+        SELECT status FROM Attendance
+        WHERE student_id = ?
+    """, (student_id,))
+
+    attendance = cursor.fetchall()
+
+    if attendance:
+        present_count = sum(1 for record in attendance if record[0] == "Present")
+        total_attendance = len(attendance)
+        attendance_rate = (present_count / total_attendance) * 100
+    else:
+        present_count = 0
+        total_attendance = 0
+        attendance_rate = 0
+
+    print("\n===== STUDENT PERFORMANCE SUMMARY =====")
+    print(f"Student Name      : {student[0]}")
+    print(f"Average Score     : {average:.2f}")
+    print(f"Grade             : {grade}")
+    print(f"Remark            : {remark}")
+    print(f"Present Days      : {present_count}")
+    print(f"Total Attendance  : {total_attendance}")
+    print(f"Attendance Rate   : {attendance_rate:.2f}%")
+
+#-------------------------------
+# VIEW GENERATED REPORTS
+#------------------------------
+
+def view_generated_reports():
+    create_reports_folder()
+
+    reports = os.listdir("Reports")
+
+    print("\nGENERATED REPORTS")
+    print("-" * 40)
+
+    if reports:
+        for report in reports:
+            print(report)
+    else:
+        print("No reports generated yet.")
+
+
+
+#-------------------------------
+# SYSTEM SUMMARY
+#-------------------------------
+
+def system_summary():
+    # Count students
+    cursor.execute("SELECT COUNT(*) FROM Students")
+    total_students = cursor.fetchone()[0]
+
+    # Count teachers
+    cursor.execute("SELECT COUNT(*) FROM Teachers")
+    total_teachers = cursor.fetchone()[0]
+
+    # Count courses
+    cursor.execute("SELECT COUNT(*) FROM Courses")
+    total_courses = cursor.fetchone()[0]
+
+    # Count grades
+    cursor.execute("SELECT COUNT(*) FROM Grades")
+    total_grades = cursor.fetchone()[0]
+
+    # Count attendance records
+    cursor.execute("SELECT COUNT(*) FROM Attendance")
+    total_attendance = cursor.fetchone()[0]
+
+    print("\n========== SYSTEM SUMMARY ==========")
+    print(f"Total Students          : {total_students}")
+    print(f"Total Teachers          : {total_teachers}")
+    print(f"Total Courses           : {total_courses}")
+    print(f"Total Grades Recorded   : {total_grades}")
+    print(f"Attendance Records      : {total_attendance}")
+
+#-------------------------------
+# GENERATE SYSTEM SUMMARY REPORT
+#-------------------------------
+
+def generate_system_summary_report():
+    create_reports_folder()
+
+    cursor.execute("SELECT COUNT(*) FROM Students")
+    total_students = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM Teachers")
+    total_teachers = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM Courses")
+    total_courses = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM Grades")
+    total_grades = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM Attendance")
+    total_attendance = cursor.fetchone()[0]
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"Reports/System_Summary_{timestamp}.txt"
+
+    with open(filename, "w") as file:
+        file.write("SYSTEM SUMMARY REPORT\n")
+        file.write("=" * 40 + "\n\n")
+        file.write(f"Total Students        : {total_students}\n")
+        file.write(f"Total Teachers        : {total_teachers}\n")
+        file.write(f"Total Courses         : {total_courses}\n")
+        file.write(f"Total Grades Recorded : {total_grades}\n")
+        file.write(f"Attendance Records    : {total_attendance}\n")
+        file.write("\nReport generated successfully.\n")
+
+    print(f"System summary report saved as: {filename}")
 
 
 # -------------------------------
@@ -687,11 +1166,49 @@ def login():
         print("Invalid credentials.")
         return None, None
 
+#---------------------------------
+#CHANGE PASSWORD
+#--------------------------------
+
+def change_password(username):
+    print("\n===== CHANGE PASSWORD =====")
+
+    current_password = input("Enter current password: ")
+    new_password = input("Enter new password: ")
+    confirm_password = input("Confirm new password: ")
+
+    if new_password != confirm_password:
+        print("New passwords do not match.")
+        return
+
+    hashed_current = hash_password(current_password)
+
+    cursor.execute("""
+        SELECT * FROM Users
+        WHERE username = ? AND password = ?
+    """, (username, hashed_current))
+
+    user = cursor.fetchone()
+
+    if not user:
+        print("Current password is incorrect.")
+        return
+
+    hashed_new = hash_password(new_password)
+
+    cursor.execute("""
+        UPDATE Users
+        SET password = ?
+        WHERE username = ?
+    """, (hashed_new, username))
+
+    conn.commit()
+    print("Password changed successfully!\n")
 
 # -------------------------------
 # ADMIN MENU
-# -------------------------------
-def admin_menu():
+#--------------------------------
+def admin_menu(username):
     while True:
         print("\n===== ADMIN DASHBOARD =====")
         print("1. Add Student")
@@ -712,7 +1229,17 @@ def admin_menu():
         print("16. Generate Performance Report")
         print("18. Mark Attendance")
         print("19. View Attendance")
-        print("20. Logout")
+        print("20. Student Performance Summary")
+        print("21. View System Summary")
+        print("22. Generate Summary Report")
+        print("23. Generate Student Report File")
+        print("24. Generate Attendance Report File")
+        print("25. Generate Teacher Report File")
+        print("26. Generate Course Report File")
+        print("27. View generated reports")
+        print("28. Change password")
+        print("29. Backup Database")
+        print("30. Logout")
         choice = input("Select: ")
 
         if choice == "1":
@@ -752,6 +1279,26 @@ def admin_menu():
         elif choice == "19":
             view_attendance()
         elif choice == "20":
+            student_performance_summary()
+        elif choice == "21":
+            system_summary()
+        elif choice == "22":
+            generate_system_summary_report()
+        elif choice == "23":
+            generate_student_report_file()
+        elif choice == "24":
+            generate_attendance_report_file()
+        elif choice == "25":
+            generate_teacher_report_file()
+        elif choice == "26":
+            generate_course_report_file()
+        elif choice == "27":
+            view_generated_reports()
+        elif choice == "28":
+            change_password(username)
+        elif choice == "29":
+            backup_database()
+        elif choice == "30":
             print("Logging out...")
             break
         else:
@@ -761,7 +1308,7 @@ def admin_menu():
 # -------------------------------
 # TEACHER MENU
 # -------------------------------
-def teacher_menu():
+def teacher_menu(username):
     while True:
         print("\n===== TEACHER DASHBOARD =====")
         print("1. View Students")
@@ -776,7 +1323,12 @@ def teacher_menu():
         print("10. Generate Performance Report")
         print("11. Mark Attendance")
         print("12. View Attendance")
-        print("13. Logout")
+        print("13. Student Performance Summary")
+        print("14. Generate Summary Report")
+        print("15. Generate Student Report File")
+        print("16. Generate Attendance Report File")
+        print("17. Change password")
+        print("18. Logout")
 
         choice = input("Select: ")
 
@@ -805,6 +1357,16 @@ def teacher_menu():
         elif choice == "12":
             view_attendance()
         elif choice == "13":
+            student_performance_summary()
+        elif choice == "14":
+            generate_system_summary_report()
+        elif choice == "15":
+            generate_student_report_file()
+        elif choice == "16":
+            generate_attendance_report_file()
+        elif choice == "17":
+            change_password(username)
+        elif choice == "18":
             print("Logging out...")
             break
         else:
@@ -819,7 +1381,9 @@ def student_menu(username):
         print("\n===== STUDENT DASHBOARD =====")
         print("1. View My Details")
         print("2. View Courses")
-        print("3. Logout")
+        print("3. Student Performance Summary")
+        print("4. Change password")
+        print("5. Logout")
 
         choice = input("Select: ")
 
@@ -828,6 +1392,10 @@ def student_menu(username):
         elif choice == "2":
             view_courses()
         elif choice == "3":
+            student_performance_summary()
+        elif choice == "4":
+            change_password(username)
+        elif choice == "5":
             print("Logging out...")
             break
         else:
@@ -840,9 +1408,9 @@ def start_system():
     role, username = login()
 
     if role == "admin":
-        admin_menu()
+        admin_menu(username)
     elif role == "teacher":
-        teacher_menu()
+        teacher_menu(username)
     elif role == "student":
         student_menu(username)
     else:

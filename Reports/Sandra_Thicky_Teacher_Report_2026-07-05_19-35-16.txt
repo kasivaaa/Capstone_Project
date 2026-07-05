@@ -1,0 +1,12 @@
+TEACHER REPORT
+========================================
+
+TEACHER DETAILS
+----------------------------------------
+Name    : Sandra Thicky
+Subject : Computer Science
+Email   : sandrat@tebuschool.com
+
+ASSIGNED COURSES
+----------------------------------------
+- Computer Science

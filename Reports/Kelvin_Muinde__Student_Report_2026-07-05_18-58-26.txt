@@ -1,0 +1,25 @@
+STUDENT PERFORMANCE REPORT
+=============================================
+
+STUDENT DETAILS
+---------------------------------------------
+Name   : Kelvin Muinde 
+Course : Business Commerce
+Age    : 27
+Email  : kelvinm@tebuschool.com
+
+GRADES
+---------------------------------------------
+Business Commerce : 80
+
+PERFORMANCE SUMMARY
+---------------------------------------------
+Average Score   : 80.00
+Grade           : A
+Remark          : Excellent
+
+ATTENDANCE SUMMARY
+---------------------------------------------
+Present Days     : 1
+Total Attendance : 1
+Attendance Rate  : 100.00%

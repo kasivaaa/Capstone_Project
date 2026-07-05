@@ -1,0 +1,14 @@
+ATTENDANCE REPORT
+========================================
+
+Student Name: John Mwangi
+
+ATTENDANCE RECORDS
+----------------------------------------
+2026-07-03 | Computer Science | Absent
+
+SUMMARY
+----------------------------------------
+Present Days    : 0
+Total Records   : 1
+Attendance Rate : 0.00%

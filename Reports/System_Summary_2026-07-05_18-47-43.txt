@@ -1,0 +1,10 @@
+SYSTEM SUMMARY REPORT
+========================================
+
+Total Students        : 3
+Total Teachers        : 3
+Total Courses         : 3
+Total Grades Recorded : 3
+Attendance Records    : 3
+
+Report generated successfully.

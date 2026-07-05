@@ -1,0 +1,12 @@
+TEACHER REPORT
+========================================
+
+TEACHER DETAILS
+----------------------------------------
+Name    : Christopher Makau
+Subject : Information Technology
+Email   : christopherm@tebuschool.com
+
+ASSIGNED COURSES
+----------------------------------------
+- Information Technology

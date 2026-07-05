@@ -1,0 +1,25 @@
+STUDENT PERFORMANCE REPORT
+=============================================
+
+STUDENT DETAILS
+---------------------------------------------
+Name   : Nicole Kasiva
+Course : Computer Science
+Age    : 22
+Email  : nicole@tebuschool.com
+
+GRADES
+---------------------------------------------
+Information Technology: 78
+
+PERFORMANCE SUMMARY
+---------------------------------------------
+Average Score   : 78.00
+Grade           : B
+Remark          : Very Good
+
+ATTENDANCE SUMMARY
+---------------------------------------------
+Present Days     : 1
+Total Attendance : 1
+Attendance Rate  : 100.00%

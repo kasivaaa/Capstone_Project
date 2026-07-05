@@ -1,0 +1,14 @@
+ATTENDANCE REPORT
+========================================
+
+Student Name: Nicole Kasiva
+
+ATTENDANCE RECORDS
+----------------------------------------
+2026-07-03 | Information Technology | Present
+
+SUMMARY
+----------------------------------------
+Present Days    : 1
+Total Records   : 1
+Attendance Rate : 100.00%

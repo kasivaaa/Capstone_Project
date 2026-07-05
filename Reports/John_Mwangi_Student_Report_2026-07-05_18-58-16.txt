@@ -1,0 +1,25 @@
+STUDENT PERFORMANCE REPORT
+=============================================
+
+STUDENT DETAILS
+---------------------------------------------
+Name   : John Mwangi
+Course : Information Technology
+Age    : 28
+Email  : john@tebuschool.com
+
+GRADES
+---------------------------------------------
+Computer Science: 54
+
+PERFORMANCE SUMMARY
+---------------------------------------------
+Average Score   : 54.00
+Grade           : D
+Remark          : Pass
+
+ATTENDANCE SUMMARY
+---------------------------------------------
+Present Days     : 0
+Total Attendance : 1
+Attendance Rate  : 0.00%

@@ -1,0 +1,14 @@
+ATTENDANCE REPORT
+========================================
+
+Student Name: Kelvin Muinde 
+
+ATTENDANCE RECORDS
+----------------------------------------
+2026-07-03 | Business Commerce  | Present
+
+SUMMARY
+----------------------------------------
+Present Days    : 1
+Total Records   : 1
+Attendance Rate : 100.00%

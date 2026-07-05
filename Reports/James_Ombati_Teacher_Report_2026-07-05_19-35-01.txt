@@ -1,0 +1,12 @@
+TEACHER REPORT
+========================================
+
+TEACHER DETAILS
+----------------------------------------
+Name    : James Ombati
+Subject : Business Commerce
+Email   : jameso@tebuschool.com
+
+ASSIGNED COURSES
+----------------------------------------
+- Business Commerce 
